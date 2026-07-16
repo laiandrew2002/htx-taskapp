@@ -18,3 +18,17 @@ export const createTaskBodySchema: z.ZodType<CreateTaskInput> = z.lazy(() =>
 );
 
 export type CreateTaskBody = z.infer<typeof createTaskBodySchema>;
+
+export const updateTaskBodySchema = z
+  .object({
+    status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
+    assignedDeveloperId: z.union([z.coerce.number().int().positive(), z.null()]).optional(),
+  })
+  .refine(
+    (data) => data.status !== undefined || data.assignedDeveloperId !== undefined,
+    {
+      message: "At least one field must be provided",
+    },
+  );
+
+export type UpdateTaskBody = z.infer<typeof updateTaskBodySchema>;

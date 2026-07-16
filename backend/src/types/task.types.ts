@@ -19,3 +19,13 @@ export interface CreateTaskInput {
   skillIds?: number[];
   subtasks?: CreateTaskInput[];
 }
+
+export interface UpdateTaskInput {
+  status?: TaskStatus;
+  assignedDeveloperId?: number | null;
+}
+
+export interface CreateTaskResult {
+  task: TaskDTO;
+  warnings: string[];
+}
