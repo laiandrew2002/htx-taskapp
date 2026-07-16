@@ -3,11 +3,18 @@ import {
   NotFoundError,
   UnprocessableEntityError,
 } from "../utils/errors";
-import type { CreateTaskInput, TaskDTO, UpdateTaskInput } from "../types/task.types";
+import type {
+  CreateTaskInput,
+  CreateTaskResult,
+  TaskDTO,
+  UpdateTaskInput,
+} from "../types/task.types";
 import type { ListTasksQuery } from "../validators/task.validator";
 import { taskRepository } from "../repositories/task.repository";
 import { skillRepository } from "../repositories/skill.repository";
 import { developerRepository } from "../repositories/developer.repository";
+import { geminiService } from "./gemini.service";
+import { parseGeminiSkillResponse } from "../utils/geminiParser";
 import {
   collectSkillIds,
   developerHasRequiredSkills,
@@ -19,6 +26,7 @@ export class TaskService {
     private readonly repository = taskRepository,
     private readonly skills = skillRepository,
     private readonly developers = developerRepository,
+    private readonly gemini = geminiService,
   ) {}
 
   async listTasks(query: ListTasksQuery): Promise<TaskDTO[]> {
@@ -35,9 +43,13 @@ export class TaskService {
     return task;
   }
 
-  async createTask(input: CreateTaskInput): Promise<TaskDTO> {
-    await this.validateSkillIds(input);
-    return this.repository.createTaskTree(input);
+  async createTask(input: CreateTaskInput): Promise<CreateTaskResult> {
+    const warnings: string[] = [];
+    const enrichedInput = await this.enrichWithInferredSkills(input, warnings);
+    await this.validateSkillIds(enrichedInput);
+    const task = await this.repository.createTaskTree(enrichedInput);
+
+    return { task, warnings };
   }
 
   async updateTask(id: number, input: UpdateTaskInput): Promise<TaskDTO> {
@@ -64,6 +76,67 @@ export class TaskService {
     }
 
     return updatedTask;
+  }
+
+  private async enrichWithInferredSkills(
+    input: CreateTaskInput,
+    warnings: string[],
+  ): Promise<CreateTaskInput> {
+    const skillIds =
+      input.skillIds && input.skillIds.length > 0
+        ? input.skillIds
+        : await this.inferSkillIdsForTitle(input.title, warnings);
+
+    const subtasks = input.subtasks
+      ? await Promise.all(
+          input.subtasks.map((subtask) => this.enrichWithInferredSkills(subtask, warnings)),
+        )
+      : undefined;
+
+    return {
+      title: input.title,
+      skillIds,
+      subtasks,
+    };
+  }
+
+  private async inferSkillIdsForTitle(
+    title: string,
+    warnings: string[],
+  ): Promise<number[] | undefined> {
+    if (!this.gemini.isConfigured()) {
+      warnings.push(
+        `Could not infer skills for task "${title}": GEMINI_API_KEY is not configured`,
+      );
+      return undefined;
+    }
+
+    try {
+      const rawResponse = await this.gemini.inferSkills(title);
+      const skillNames = parseGeminiSkillResponse(rawResponse);
+
+      if (skillNames.length === 0) {
+        warnings.push(
+          `Could not infer skills for task "${title}": unparseable Gemini response "${rawResponse}"`,
+        );
+        return undefined;
+      }
+
+      const skills = await this.skills.findByNames(skillNames);
+
+      if (skills.length === 0) {
+        warnings.push(
+          `Could not infer skills for task "${title}": no matching skills found for "${skillNames.join(", ")}"`,
+        );
+        return undefined;
+      }
+
+      return skills.map((skill) => skill.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown Gemini error";
+      warnings.push(`Could not infer skills for task "${title}": ${message}`);
+      return undefined;
+    }
   }
 
   private async validateSkillIds(input: CreateTaskInput): Promise<void> {
