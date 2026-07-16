@@ -6,7 +6,7 @@ npx prisma migrate deploy
 
 if [ "$RUN_SEED" = "true" ]; then
   echo "Seeding database..."
-  npx tsx prisma/seed.ts
+  npx prisma db seed
 fi
 
 exec "$@"
