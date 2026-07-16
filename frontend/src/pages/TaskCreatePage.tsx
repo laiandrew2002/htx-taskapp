@@ -1,3 +1,4 @@
+import { TaskCreateForm } from "@/components/tasks/TaskCreateForm";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Alert } from "@/components/ui/Alert";
 import { Spinner } from "@/components/ui/Spinner";
@@ -10,14 +11,20 @@ export function TaskCreatePage() {
   return (
     <PageContainer
       title="Create Task"
-      description="Build nested tasks with required skills. The creation form will be implemented in the next milestone."
+      description="Build nested tasks with optional skills. Leave skills empty to auto-detect with Gemini."
     >
       {skillsQuery.isLoading ? <Spinner label="Loading skills..." /> : null}
+
       {skillsQuery.error ? (
-        <Alert variant="error" title="Failed to load skills" message={getErrorMessage(skillsQuery.error)} />
+        <Alert
+          variant="error"
+          title="Failed to load skills"
+          message={getErrorMessage(skillsQuery.error)}
+        />
       ) : null}
+
       {!skillsQuery.isLoading && !skillsQuery.error ? (
-        <Alert variant="info" message={`API connected. ${skillsQuery.data?.length ?? 0} skills available for task creation.`} />
+        <TaskCreateForm skills={skillsQuery.data ?? []} />
       ) : null}
     </PageContainer>
   );
