@@ -11,19 +11,31 @@ interface TaskStatusSelectProps {
   value: TaskStatus;
   disabled?: boolean;
   error?: string;
+  showLabel?: boolean;
   onChange: (status: TaskStatus) => void;
 }
 
-export function TaskStatusSelect({ taskId, value, disabled, error, onChange }: TaskStatusSelectProps) {
+export function TaskStatusSelect({
+  taskId,
+  value,
+  disabled,
+  error,
+  showLabel = true,
+  onChange,
+}: TaskStatusSelectProps) {
   const selectId = `status-${taskId}`;
 
   return (
     <div className="space-y-1">
-      <label htmlFor={selectId} className="block text-xs font-medium text-slate-600">
+      <label
+        htmlFor={selectId}
+        className={showLabel ? "block text-xs font-medium text-slate-600" : "sr-only"}
+      >
         Status
       </label>
       <select
         id={selectId}
+        aria-label="Status"
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value as TaskStatus)}

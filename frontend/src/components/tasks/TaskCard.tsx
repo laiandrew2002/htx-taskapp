@@ -5,6 +5,7 @@ import { useUpdateTask } from "@/hooks/useUpdateTask";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { DeveloperSelect } from "./DeveloperSelect";
 import { SkillBadgeList } from "./SkillBadgeList";
+import { TASK_ROW_GRID_CLASS } from "./taskListLayout";
 import { TaskStatusSelect } from "./TaskStatusSelect";
 
 interface TaskCardProps {
@@ -55,51 +56,51 @@ export function TaskCard({ task, developers, depth = 0 }: TaskCardProps) {
   };
 
   return (
-    <article className="space-y-3">
-      <div
-        className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-        style={{ marginLeft: depth * 24 }}
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1 space-y-2">
-            <h2 className="text-base font-medium text-slate-900">{task.title}</h2>
-            <div>
-              <p className="mb-1 text-xs font-medium text-slate-600">Required Skills</p>
-              <SkillBadgeList skills={task.skills} />
-            </div>
-          </div>
-
-          <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-[28rem]">
-            <DeveloperSelect
-              taskId={task.id}
-              value={task.assignedDeveloper?.id ?? null}
-              developers={developers}
-              disabled={isUpdating}
-              error={actionError ?? undefined}
-              onChange={handleDeveloperChange}
-            />
-            <TaskStatusSelect
-              taskId={task.id}
-              value={task.status}
-              disabled={isUpdating}
-              onChange={handleStatusChange}
-            />
-          </div>
+    <>
+      <div className={`${TASK_ROW_GRID_CLASS} border-b border-slate-100 px-4 py-5 last:border-b-0`}>
+        <div className="min-w-0" style={{ paddingLeft: depth * 24 }}>
+          <p className="text-sm leading-relaxed text-slate-900">{task.title}</p>
         </div>
+
+        <div className="md:pt-0.5">
+          <SkillBadgeList skills={task.skills} />
+        </div>
+
+        <div className="hidden text-sm text-slate-400 md:block md:pt-1" aria-hidden="true">
+          ...
+        </div>
+
+        <TaskStatusSelect
+          taskId={task.id}
+          value={task.status}
+          disabled={isUpdating}
+          showLabel={false}
+          onChange={handleStatusChange}
+        />
+
+        <DeveloperSelect
+          taskId={task.id}
+          value={task.assignedDeveloper?.id ?? null}
+          developers={developers}
+          disabled={isUpdating}
+          error={actionError ?? undefined}
+          showLabel={false}
+          onChange={handleDeveloperChange}
+        />
+
+        {actionError ? (
+          <p className="col-span-full text-xs text-red-600">{actionError}</p>
+        ) : null}
       </div>
 
-      {task.subtasks.length > 0 ? (
-        <div className="space-y-3">
-          {task.subtasks.map((subtask) => (
-            <TaskCard
-              key={subtask.id}
-              task={subtask}
-              developers={developers}
-              depth={depth + 1}
-            />
-          ))}
-        </div>
-      ) : null}
-    </article>
+      {task.subtasks.map((subtask) => (
+        <TaskCard
+          key={subtask.id}
+          task={subtask}
+          developers={developers}
+          depth={depth + 1}
+        />
+      ))}
+    </>
   );
 }

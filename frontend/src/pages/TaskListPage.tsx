@@ -14,10 +14,7 @@ export function TaskListPage() {
   const loadError = tasksQuery.error ?? developersQuery.error;
 
   return (
-    <PageContainer
-      title="Task List"
-      description="Assign developers and update task status. Business rules are enforced by the backend."
-    >
+    <PageContainer title="Tasks">
       {isLoading ? <Spinner label="Loading tasks..." /> : null}
 
       {loadError ? (

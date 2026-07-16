@@ -33,3 +33,6 @@ coverage/
 
 # Docker
 *.pid
+
+# Cursor
+.cursor/

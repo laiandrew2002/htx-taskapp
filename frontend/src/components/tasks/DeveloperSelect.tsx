@@ -6,6 +6,7 @@ interface DeveloperSelectProps {
   developers: Developer[];
   disabled?: boolean;
   error?: string;
+  showLabel?: boolean;
   onChange: (developerId: number | null) => void;
 }
 
@@ -15,17 +16,22 @@ export function DeveloperSelect({
   developers,
   disabled,
   error,
+  showLabel = true,
   onChange,
 }: DeveloperSelectProps) {
   const selectId = `developer-${taskId}`;
 
   return (
     <div className="space-y-1">
-      <label htmlFor={selectId} className="block text-xs font-medium text-slate-600">
-        Assigned Developer
+      <label
+        htmlFor={selectId}
+        className={showLabel ? "block text-xs font-medium text-slate-600" : "sr-only"}
+      >
+        Assignee
       </label>
       <select
         id={selectId}
+        aria-label="Assignee"
         value={value ?? ""}
         disabled={disabled}
         onChange={(event) => {
