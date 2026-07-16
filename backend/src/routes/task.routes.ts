@@ -1,12 +1,14 @@
 import { Router } from "express";
-import { getTaskById, listTasks } from "../controllers/task.controller";
+import { createTask, getTaskById, listTasks } from "../controllers/task.controller";
 import { validate } from "../middleware/validate.middleware";
 import { idParamSchema } from "../validators/common.validator";
-import { listTasksQuerySchema } from "../validators/task.validator";
+import { createTaskBodySchema, listTasksQuerySchema } from "../validators/task.validator";
 
 const taskRouter = Router();
 
 taskRouter.get("/", validate({ query: listTasksQuerySchema }), listTasks);
+
+taskRouter.post("/", validate({ body: createTaskBodySchema }), createTask);
 
 taskRouter.get(
   "/:id",

@@ -13,3 +13,9 @@ export interface TaskDTO {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CreateTaskInput {
+  title: string;
+  skillIds?: number[];
+  subtasks?: CreateTaskInput[];
+}
