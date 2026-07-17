@@ -8,8 +8,14 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  LLM_PROVIDER: z.enum(["gemini", "openai"]).default("gemini"),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_BASE_URL: z.string().default("https://openrouter.ai/api/v1"),
+  OPENAI_MODEL: z.string().default("openai/gpt-oss-20b:free"),
+  OPENAI_HTTP_REFERER: z.string().optional(),
+  OPENAI_APP_NAME: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

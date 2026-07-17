@@ -13,7 +13,7 @@ export function SkillMultiSelect({
   skills,
   value,
   onChange,
-  hint = "Leave empty to auto-detect skills with Gemini.",
+  hint = "Leave empty to auto-detect skills with the configured LLM.",
 }: SkillMultiSelectProps) {
   const toggleSkill = (skillId: number): void => {
     if (value.includes(skillId)) {

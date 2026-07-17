@@ -9,7 +9,7 @@ const VALID_RESPONSES: Record<string, AllowedSkillName[]> = {
   "Backend,Frontend": ["Backend", "Frontend"],
 };
 
-export function parseGeminiSkillResponse(raw: string): AllowedSkillName[] {
+export function parseSkillInferenceResponse(raw: string): AllowedSkillName[] {
   const normalized = raw.trim().replace(/\s+/g, "");
 
   const exactMatch = VALID_RESPONSES[normalized];

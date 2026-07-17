@@ -13,8 +13,8 @@ import type { ListTasksQuery } from "../validators/task.validator";
 import { taskRepository } from "../repositories/task.repository";
 import { skillRepository } from "../repositories/skill.repository";
 import { developerRepository } from "../repositories/developer.repository";
-import { geminiService } from "./gemini.service";
-import { parseGeminiSkillResponse } from "../utils/geminiParser";
+import { skillInferenceProvider } from "./llm";
+import { parseSkillInferenceResponse } from "../utils/skillInferenceParser";
 import {
   collectSkillIds,
   developerHasRequiredSkills,
@@ -26,7 +26,7 @@ export class TaskService {
     private readonly repository = taskRepository,
     private readonly skills = skillRepository,
     private readonly developers = developerRepository,
-    private readonly gemini = geminiService,
+    private readonly llm = skillInferenceProvider,
   ) {}
 
   async listTasks(query: ListTasksQuery): Promise<TaskDTO[]> {
@@ -97,19 +97,19 @@ export class TaskService {
   }
 
   private async inferSkillIdsForTitle(title: string): Promise<number[]> {
-    if (!this.gemini.isConfigured()) {
+    if (!this.llm.isConfigured()) {
       throw new UnprocessableEntityError(
-        `Could not infer skills for task "${title}": GEMINI_API_KEY is not configured`,
+        `Could not infer skills for task "${title}": ${this.llm.getConfigurationError()}`,
       );
     }
 
     try {
-      const rawResponse = await this.gemini.inferSkills(title);
-      const skillNames = parseGeminiSkillResponse(rawResponse);
+      const rawResponse = await this.llm.inferSkills(title);
+      const skillNames = parseSkillInferenceResponse(rawResponse);
 
       if (skillNames.length === 0) {
         throw new UnprocessableEntityError(
-          `Could not infer skills for task "${title}": unparseable Gemini response "${rawResponse}"`,
+          `Could not infer skills for task "${title}": unparseable ${this.llm.providerName} response "${rawResponse}"`,
         );
       }
 
@@ -127,7 +127,7 @@ export class TaskService {
         throw error;
       }
 
-      const message = error instanceof Error ? error.message : "Unknown Gemini error";
+      const message = error instanceof Error ? error.message : "Unknown LLM error";
       throw new UnprocessableEntityError(
         `Could not infer skills for task "${title}": ${message}`,
       );

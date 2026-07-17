@@ -1,15 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { env } from "../config/env";
+import { env } from "../../config/env";
+import { buildSkillInferencePrompt } from "../../utils/skillInferencePrompt";
+import type { SkillInferenceProvider } from "./types";
 
-function buildPrompt(title: string): string {
-  return [
-    `Given this task title: "${title}"`,
-    "Return ONLY one of: Frontend | Backend | Frontend,Backend",
-    "No explanation.",
-  ].join("\n");
-}
+export class GeminiSkillInferenceProvider implements SkillInferenceProvider {
+  readonly providerName = "Gemini";
 
-export class GeminiService {
   constructor(
     private readonly apiKey = env.GEMINI_API_KEY,
     private readonly modelName = env.GEMINI_MODEL,
@@ -19,14 +15,18 @@ export class GeminiService {
     return Boolean(this.apiKey);
   }
 
+  getConfigurationError(): string {
+    return "GEMINI_API_KEY is not configured";
+  }
+
   async inferSkills(title: string): Promise<string> {
     if (!this.apiKey) {
-      throw new Error("GEMINI_API_KEY is not configured");
+      throw new Error(this.getConfigurationError());
     }
 
     const client = new GoogleGenerativeAI(this.apiKey);
     const model = client.getGenerativeModel({ model: this.modelName });
-    const result = await model.generateContent(buildPrompt(title));
+    const result = await model.generateContent(buildSkillInferencePrompt(title));
     const text = result.response.text().trim();
 
     if (!text) {
@@ -36,5 +36,3 @@ export class GeminiService {
     return text;
   }
 }
-
-export const geminiService = new GeminiService();

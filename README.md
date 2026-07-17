@@ -8,7 +8,7 @@ A production-style task management application for assigning developers to tasks
 |-------|--------------|
 | Frontend | React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Axios, Tailwind CSS |
 | Backend | Node.js, Express, TypeScript, Prisma, PostgreSQL, Zod |
-| LLM | Google Gemini API |
+| LLM | Google Gemini API or OpenAI-compatible APIs (e.g. OpenRouter / DeepSeek) |
 | Infrastructure | Docker, Docker Compose, nginx |
 
 ## Architecture
@@ -191,8 +191,14 @@ Frontend runs at http://localhost:5173
 | `POSTGRES_USER` | Database user | `taskapp` |
 | `POSTGRES_PASSWORD` | Database password | `taskapp_secret` |
 | `POSTGRES_DB` | Database name | `taskapp` |
-| `GEMINI_API_KEY` | Google Gemini API key | empty |
+| `LLM_PROVIDER` | Skill inference provider (`gemini` or `openai`) | `gemini` |
+| `GEMINI_API_KEY` | Google Gemini API key (when `LLM_PROVIDER=gemini`) | empty |
 | `GEMINI_MODEL` | Gemini model name | `gemini-2.0-flash` |
+| `OPENAI_API_KEY` | OpenAI-compatible API key (when `LLM_PROVIDER=openai`) | empty |
+| `OPENAI_BASE_URL` | OpenAI-compatible base URL | `https://openrouter.ai/api/v1` |
+| `OPENAI_MODEL` | OpenAI-compatible model | `deepseek/deepseek-r1:free` |
+| `OPENAI_HTTP_REFERER` | Optional referer header for OpenRouter | empty |
+| `OPENAI_APP_NAME` | Optional app name header for OpenRouter | empty |
 | `CORS_ORIGIN` | Allowed origins (comma-separated) | `http://localhost,http://localhost:5173` |
 | `RUN_SEED` | Seed DB on backend container start | `true` |
 
@@ -203,8 +209,12 @@ Frontend runs at http://localhost:5173
 | `DATABASE_URL` | PostgreSQL connection string |
 | `PORT` | Server port (default `3000`) |
 | `CORS_ORIGIN` | Comma-separated allowed origins |
-| `GEMINI_API_KEY` | Optional — skill inference skipped if empty |
+| `LLM_PROVIDER` | Skill inference provider (`gemini` or `openai`) |
+| `GEMINI_API_KEY` | Required when `LLM_PROVIDER=gemini` |
 | `GEMINI_MODEL` | Gemini model identifier |
+| `OPENAI_API_KEY` | Required when `LLM_PROVIDER=openai` |
+| `OPENAI_BASE_URL` | OpenAI-compatible API base URL |
+| `OPENAI_MODEL` | Model name (e.g. `deepseek/deepseek-r1:free` via OpenRouter) |
 
 ### Frontend (`frontend/.env`)
 
@@ -261,8 +271,8 @@ Create a task tree.
 }
 ```
 
-- Omit `skillIds` (or send `[]`) to trigger Gemini inference per node
-- If Gemini inference fails, the request returns `422` and no task is created
+- Omit `skillIds` (or send `[]`) to trigger LLM skill inference per node
+- If inference fails, the request returns `422` and no task is created
 
 #### `PATCH /tasks/:id`
 Update status and/or assignment.
@@ -305,7 +315,14 @@ Returns `{ status: "ok" }`.
 
 ## LLM Integration
 
-When creating a task **without** required skills, the backend prompts Gemini:
+Skill inference uses a pluggable provider selected by `LLM_PROVIDER`:
+
+| Provider | Env | Example model |
+|----------|-----|---------------|
+| `gemini` | `GEMINI_API_KEY`, `GEMINI_MODEL` | `gemini-2.0-flash` |
+| `openai` | `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL` | `deepseek/deepseek-r1:free` (OpenRouter) |
+
+When creating a task **without** required skills, the backend prompts the configured LLM:
 
 ```
 Given this task title: "{title}"
@@ -314,7 +331,26 @@ No explanation.
 ```
 
 - Parsed skills are stored in the database
-- If Gemini fails or `GEMINI_API_KEY` is missing when inference is required, the API returns `422` with an error message
+- If inference fails or the provider API key is missing, the API returns `422` with an error message
+
+### Switching providers
+
+**OpenRouter / DeepSeek (recommended free tier):**
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_openrouter_key
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_MODEL=deepseek/deepseek-r1:free
+```
+
+**Gemini:**
+```env
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_key
+GEMINI_MODEL=gemini-2.0-flash-lite
+```
+
+Restart the backend after changing provider settings.
 
 ## Tradeoffs
 
@@ -323,6 +359,7 @@ No explanation.
 | Layered backend | Clear separation of concerns | More files than a monolith |
 | Recursive POST for nested tasks | Single atomic create | Complex validation |
 | Gemini on create only | Spec requirement; fast reads | External dependency |
+| Pluggable LLM providers | Easy switch between Gemini and OpenAI-compatible APIs | Two sets of env vars to document |
 | nginx API proxy in Docker | Same-origin `/api`, no CORS issues in production | Differs from local dev URL setup |
 | Backend-only business rules | Single source of truth | Frontend shows errors after invalid actions |
 | Load-all-tasks for tree reads | Simple for take-home scope | Not ideal for very large datasets |

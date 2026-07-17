@@ -11,7 +11,7 @@ export function TaskCreatePage() {
   return (
     <PageContainer
       title="Create Task"
-      description="Build nested tasks with optional skills. Leave skills empty to auto-detect with Gemini."
+      description="Build nested tasks with optional skills. Leave skills empty to auto-detect with the configured LLM."
     >
       {skillsQuery.isLoading ? <Spinner label="Loading skills..." /> : null}
 
