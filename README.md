@@ -262,7 +262,7 @@ Create a task tree.
 ```
 
 - Omit `skillIds` (or send `[]`) to trigger Gemini inference per node
-- Response includes `{ task, warnings }` when skills are inferred or Gemini fails gracefully
+- If Gemini inference fails, the request returns `422` and no task is created
 
 #### `PATCH /tasks/:id`
 Update status and/or assignment.
@@ -314,7 +314,7 @@ No explanation.
 ```
 
 - Parsed skills are stored in the database
-- If Gemini fails or `GEMINI_API_KEY` is missing, the task is still created and warnings are returned
+- If Gemini fails or `GEMINI_API_KEY` is missing when inference is required, the API returns `422` with an error message
 
 ## Tradeoffs
 

@@ -23,9 +23,6 @@ export function TaskList({ tasks, developers }: TaskListProps) {
       <div className={TASK_LIST_HEADER_CLASS}>
         <p className="text-sm font-semibold text-slate-900">Task Title</p>
         <p className="text-sm font-semibold text-slate-900">Skills</p>
-        <p className="hidden text-sm font-semibold text-slate-900 md:block" aria-hidden="true">
-          ...
-        </p>
         <p className="text-sm font-semibold text-slate-900">Status</p>
         <p className="text-sm font-semibold text-slate-900">Assignee</p>
       </div>

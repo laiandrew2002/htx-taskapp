@@ -44,12 +44,11 @@ export class TaskService {
   }
 
   async createTask(input: CreateTaskInput): Promise<CreateTaskResult> {
-    const warnings: string[] = [];
-    const enrichedInput = await this.enrichWithInferredSkills(input, warnings);
+    const enrichedInput = await this.enrichWithInferredSkills(input);
     await this.validateSkillIds(enrichedInput);
     const task = await this.repository.createTaskTree(enrichedInput);
 
-    return { task, warnings };
+    return { task, warnings: [] };
   }
 
   async updateTask(id: number, input: UpdateTaskInput): Promise<TaskDTO> {
@@ -78,18 +77,15 @@ export class TaskService {
     return updatedTask;
   }
 
-  private async enrichWithInferredSkills(
-    input: CreateTaskInput,
-    warnings: string[],
-  ): Promise<CreateTaskInput> {
+  private async enrichWithInferredSkills(input: CreateTaskInput): Promise<CreateTaskInput> {
     const skillIds =
       input.skillIds && input.skillIds.length > 0
         ? input.skillIds
-        : await this.inferSkillIdsForTitle(input.title, warnings);
+        : await this.inferSkillIdsForTitle(input.title);
 
     const subtasks = input.subtasks
       ? await Promise.all(
-          input.subtasks.map((subtask) => this.enrichWithInferredSkills(subtask, warnings)),
+          input.subtasks.map((subtask) => this.enrichWithInferredSkills(subtask)),
         )
       : undefined;
 
@@ -100,15 +96,11 @@ export class TaskService {
     };
   }
 
-  private async inferSkillIdsForTitle(
-    title: string,
-    warnings: string[],
-  ): Promise<number[] | undefined> {
+  private async inferSkillIdsForTitle(title: string): Promise<number[]> {
     if (!this.gemini.isConfigured()) {
-      warnings.push(
+      throw new UnprocessableEntityError(
         `Could not infer skills for task "${title}": GEMINI_API_KEY is not configured`,
       );
-      return undefined;
     }
 
     try {
@@ -116,26 +108,29 @@ export class TaskService {
       const skillNames = parseGeminiSkillResponse(rawResponse);
 
       if (skillNames.length === 0) {
-        warnings.push(
+        throw new UnprocessableEntityError(
           `Could not infer skills for task "${title}": unparseable Gemini response "${rawResponse}"`,
         );
-        return undefined;
       }
 
       const skills = await this.skills.findByNames(skillNames);
 
       if (skills.length === 0) {
-        warnings.push(
+        throw new UnprocessableEntityError(
           `Could not infer skills for task "${title}": no matching skills found for "${skillNames.join(", ")}"`,
         );
-        return undefined;
       }
 
       return skills.map((skill) => skill.id);
     } catch (error) {
+      if (error instanceof UnprocessableEntityError) {
+        throw error;
+      }
+
       const message = error instanceof Error ? error.message : "Unknown Gemini error";
-      warnings.push(`Could not infer skills for task "${title}": ${message}`);
-      return undefined;
+      throw new UnprocessableEntityError(
+        `Could not infer skills for task "${title}": ${message}`,
+      );
     }
   }
 

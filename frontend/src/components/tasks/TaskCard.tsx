@@ -66,10 +66,6 @@ export function TaskCard({ task, developers, depth = 0 }: TaskCardProps) {
           <SkillBadgeList skills={task.skills} />
         </div>
 
-        <div className="hidden text-sm text-slate-400 md:block md:pt-1" aria-hidden="true">
-          ...
-        </div>
-
         <TaskStatusSelect
           taskId={task.id}
           value={task.status}
