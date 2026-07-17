@@ -137,7 +137,7 @@ docker compose up --build
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost:5173 |
+| Frontend | http://localhost |
 | Backend API | http://localhost:3000/api |
 | Health check | http://localhost:3000/health |
 

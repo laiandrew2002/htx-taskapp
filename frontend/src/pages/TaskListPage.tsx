@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { TaskList } from "@/components/tasks/TaskList";
+import { TaskStatusFilter, type TaskStatusFilterValue } from "@/components/tasks/TaskStatusFilter";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Alert } from "@/components/ui/Alert";
 import { Spinner } from "@/components/ui/Spinner";
@@ -7,15 +9,31 @@ import { useTasks } from "@/hooks/useTasks";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 
 export function TaskListPage() {
-  const tasksQuery = useTasks();
+  const [statusFilter, setStatusFilter] = useState<TaskStatusFilterValue>("ALL");
+  const statusQuery = statusFilter === "ALL" ? undefined : statusFilter;
+
+  const tasksQuery = useTasks(statusQuery);
   const developersQuery = useDevelopers();
 
-  const isLoading = tasksQuery.isLoading || developersQuery.isLoading;
+  const isInitialLoading =
+    (tasksQuery.isLoading && tasksQuery.data === undefined) || developersQuery.isLoading;
   const loadError = tasksQuery.error ?? developersQuery.error;
+  const isRefetchingTasks = tasksQuery.isFetching && !tasksQuery.isLoading;
 
   return (
     <PageContainer title="Tasks">
-      {isLoading ? <Spinner label="Loading tasks..." /> : null}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <TaskStatusFilter
+          value={statusFilter}
+          disabled={isInitialLoading || Boolean(loadError)}
+          onChange={setStatusFilter}
+        />
+        {isRefetchingTasks ? (
+          <p className="text-xs text-slate-500 sm:pb-2">Updating tasks...</p>
+        ) : null}
+      </div>
+
+      {isInitialLoading ? <Spinner label="Loading tasks..." /> : null}
 
       {loadError ? (
         <Alert
@@ -25,8 +43,12 @@ export function TaskListPage() {
         />
       ) : null}
 
-      {!isLoading && !loadError ? (
-        <TaskList tasks={tasksQuery.data ?? []} developers={developersQuery.data ?? []} />
+      {!isInitialLoading && !loadError ? (
+        <TaskList
+          tasks={tasksQuery.data ?? []}
+          developers={developersQuery.data ?? []}
+          statusFilter={statusFilter}
+        />
       ) : null}
     </PageContainer>
   );

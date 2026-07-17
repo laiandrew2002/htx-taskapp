@@ -1,9 +1,11 @@
 import { apiClient } from "./apiClient";
 import type { ApiSuccessResponse } from "@/types/api.types";
-import type { CreateTaskInput, CreateTaskResult, Task, UpdateTaskInput } from "@/types/task.types";
+import type { CreateTaskInput, CreateTaskResult, Task, TaskStatus, UpdateTaskInput } from "@/types/task.types";
 
-export async function getTasks(): Promise<Task[]> {
-  const response = await apiClient.get<ApiSuccessResponse<Task[]>>("/tasks");
+export async function getTasks(status?: TaskStatus): Promise<Task[]> {
+  const response = await apiClient.get<ApiSuccessResponse<Task[]>>("/tasks", {
+    params: status ? { status } : undefined,
+  });
   return response.data.data;
 }
 

@@ -1,19 +1,38 @@
 import type { Developer } from "@/types/developer.types";
 import type { Task } from "@/types/task.types";
+import type { TaskStatusFilterValue } from "./TaskStatusFilter";
+import { TASK_STATUS_OPTIONS } from "./TaskStatusSelect";
 import { TaskCard } from "./TaskCard";
 import { TASK_LIST_HEADER_CLASS } from "./taskListLayout";
 
 interface TaskListProps {
   tasks: Task[];
   developers: Developer[];
+  statusFilter?: TaskStatusFilterValue;
 }
 
-export function TaskList({ tasks, developers }: TaskListProps) {
+function getStatusFilterLabel(statusFilter: TaskStatusFilterValue): string {
+  if (statusFilter === "ALL") {
+    return "All statuses";
+  }
+
+  return TASK_STATUS_OPTIONS.find((option) => option.value === statusFilter)?.label ?? statusFilter;
+}
+
+export function TaskList({ tasks, developers, statusFilter = "ALL" }: TaskListProps) {
   if (tasks.length === 0) {
+    const isFiltered = statusFilter !== "ALL";
+
     return (
       <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
-        <p className="text-sm font-medium text-slate-900">No tasks yet</p>
-        <p className="mt-1 text-sm text-slate-500">Create a task to get started.</p>
+        <p className="text-sm font-medium text-slate-900">
+          {isFiltered ? "No tasks match this filter" : "No tasks yet"}
+        </p>
+        <p className="mt-1 text-sm text-slate-500">
+          {isFiltered
+            ? `Try selecting a different status. Currently showing: ${getStatusFilterLabel(statusFilter)}.`
+            : "Create a task to get started."}
+        </p>
       </div>
     );
   }
