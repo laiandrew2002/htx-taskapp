@@ -446,20 +446,6 @@ No explanation.
 - E2E tests (Playwright) and API integration tests
 - CI pipeline with lint, test, and Docker build
 
-## Suggested Commit History
-
-```
-chore: initialize project structure and docker compose
-feat(backend): add prisma schema, migrations, and seed data
-feat(backend): implement read APIs
-feat(backend): implement task creation with nested subtasks
-feat(backend): enforce assignment and status business rules
-feat(backend): integrate gemini skill inference
-feat(frontend): scaffold app with routing and data fetching
-feat(frontend): implement task list with assign and status update
-feat(frontend): implement recursive task creation form
-docs: add comprehensive README and docker frontend service
-```
 
 ## License
 
