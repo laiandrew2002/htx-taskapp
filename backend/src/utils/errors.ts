@@ -42,3 +42,9 @@ export class UnprocessableEntityError extends AppError {
     super(message, 422, "UNPROCESSABLE_ENTITY");
   }
 }
+
+export class SkillInferenceError extends AppError {
+  constructor(message: string) {
+    super(message, 422, "SKILL_INFERENCE_FAILED");
+  }
+}

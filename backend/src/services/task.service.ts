@@ -1,6 +1,7 @@
 import {
   ConflictError,
   NotFoundError,
+  SkillInferenceError,
   UnprocessableEntityError,
 } from "../utils/errors";
 import type {
@@ -98,8 +99,8 @@ export class TaskService {
 
   private async inferSkillIdsForTitle(title: string): Promise<number[]> {
     if (!this.llm.isConfigured()) {
-      throw new UnprocessableEntityError(
-        `Could not infer skills for task "${title}": ${this.llm.getConfigurationError()}`,
+      throw new SkillInferenceError(
+        "Automatic skill detection is not configured. Please select Frontend and/or Backend for each task.",
       );
     }
 
@@ -108,28 +109,28 @@ export class TaskService {
       const skillNames = parseSkillInferenceResponse(rawResponse);
 
       if (skillNames.length === 0) {
-        throw new UnprocessableEntityError(
-          `Could not infer skills for task "${title}": unparseable ${this.llm.providerName} response "${rawResponse}"`,
+        throw new SkillInferenceError(
+          `Automatic skill detection failed for "${title}". Please select Frontend and/or Backend manually.`,
         );
       }
 
       const skills = await this.skills.findByNames(skillNames);
 
       if (skills.length === 0) {
-        throw new UnprocessableEntityError(
-          `Could not infer skills for task "${title}": no matching skills found for "${skillNames.join(", ")}"`,
+        throw new SkillInferenceError(
+          `Automatic skill detection failed for "${title}". Please select Frontend and/or Backend manually.`,
         );
       }
 
       return skills.map((skill) => skill.id);
     } catch (error) {
-      if (error instanceof UnprocessableEntityError) {
+      if (error instanceof SkillInferenceError) {
         throw error;
       }
 
       const message = error instanceof Error ? error.message : "Unknown LLM error";
-      throw new UnprocessableEntityError(
-        `Could not infer skills for task "${title}": ${message}`,
+      throw new SkillInferenceError(
+        `Automatic skill detection failed for "${title}". Please select Frontend and/or Backend manually. (${message})`,
       );
     }
   }

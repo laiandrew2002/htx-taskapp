@@ -20,6 +20,7 @@ interface SubtaskFormProps {
   onRemove?: () => void;
   depth?: number;
   isRoot?: boolean;
+  skillSelectionRequired?: boolean;
 }
 
 function buildPath(prefix: FieldPath<TaskFormValues> | undefined, field: string): FieldPath<TaskFormValues> {
@@ -36,6 +37,7 @@ export function SubtaskForm({
   onRemove,
   depth = 0,
   isRoot = false,
+  skillSelectionRequired = false,
 }: SubtaskFormProps) {
   const { control, setValue, formState: { errors } } = useFormContext<TaskFormValues>();
 
@@ -96,6 +98,16 @@ export function SubtaskForm({
       <SkillMultiSelect
         skills={skills}
         value={skillIds ?? []}
+        hint={
+          skillSelectionRequired
+            ? "Automatic skill detection is unavailable. Select Frontend and/or Backend."
+            : undefined
+        }
+        error={
+          skillSelectionRequired && (skillIds?.length ?? 0) === 0
+            ? "Select at least one skill"
+            : undefined
+        }
         onChange={(nextSkillIds) =>
           setValue(skillIdsPath, nextSkillIds, { shouldDirty: true, shouldValidate: true })
         }
@@ -122,6 +134,7 @@ export function SubtaskForm({
               skills={skills}
               namePrefix={nestedPrefix}
               depth={depth + 1}
+              skillSelectionRequired={skillSelectionRequired}
               onRemove={() => remove(index)}
             />
           );

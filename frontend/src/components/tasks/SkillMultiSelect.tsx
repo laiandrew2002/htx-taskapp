@@ -6,6 +6,7 @@ interface SkillMultiSelectProps {
   value: number[];
   onChange: (skillIds: number[]) => void;
   hint?: string;
+  error?: string;
 }
 
 export function SkillMultiSelect({
@@ -14,6 +15,7 @@ export function SkillMultiSelect({
   value,
   onChange,
   hint = "Leave empty to auto-detect skills with the configured LLM.",
+  error,
 }: SkillMultiSelectProps) {
   const toggleSkill = (skillId: number): void => {
     if (value.includes(skillId)) {
@@ -34,7 +36,10 @@ export function SkillMultiSelect({
         {skills.map((skill) => (
           <label
             key={skill.id}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+            className={[
+              "inline-flex cursor-pointer items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm text-slate-700",
+              error ? "border-red-300" : "border-slate-200",
+            ].join(" ")}
           >
             <input
               type="checkbox"
@@ -46,6 +51,7 @@ export function SkillMultiSelect({
           </label>
         ))}
       </div>
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>
   );
 }

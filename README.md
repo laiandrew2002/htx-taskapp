@@ -1,6 +1,6 @@
 # Task Manager — Full Stack Take-Home Assignment
 
-A production-style task management application for assigning developers to tasks based on skills, with unlimited nested subtasks and optional Gemini-powered skill inference.
+A production-style task management application for assigning developers to tasks based on skills, with unlimited nested subtasks and optional LLM-powered skill inference.
 
 ## Tech Stack
 
@@ -130,7 +130,7 @@ htx-assignment/
 
 ```bash
 cp .env.example .env
-# Optional: set GEMINI_API_KEY in .env for skill inference
+# Optional: enable LLM skill inference — see "Enabling LLM Skill Inference" below
 
 docker compose up --build
 ```
@@ -163,6 +163,7 @@ docker compose up -d postgres
 ```bash
 cd backend
 cp .env.example .env
+# Optional: enable LLM skill inference — see "Enabling LLM Skill Inference" below
 npm install
 npm run migrate:deploy
 npm run seed
@@ -184,6 +185,19 @@ Frontend runs at http://localhost:5173
 
 ## Environment Variables
 
+### Which `.env` file to edit?
+
+| How you run the backend | Edit this file |
+|-------------------------|----------------|
+| `docker compose up` | **Root** `.env` (project root) |
+| `cd backend && npm run dev` | **`backend/.env`** |
+
+Docker Compose reads the root `.env` and passes values into the backend container. Local backend dev loads `backend/.env` directly. **Keep LLM settings in the file that matches how you run the app.**
+
+If LLM is not configured, you can still create tasks by **selecting skills manually** in the UI.
+
+---
+
 ### Root / Docker Compose (`.env`)
 
 | Variable | Description | Default |
@@ -196,11 +210,13 @@ Frontend runs at http://localhost:5173
 | `GEMINI_MODEL` | Gemini model name | `gemini-2.0-flash` |
 | `OPENAI_API_KEY` | OpenAI-compatible API key (when `LLM_PROVIDER=openai`) | empty |
 | `OPENAI_BASE_URL` | OpenAI-compatible base URL | `https://openrouter.ai/api/v1` |
-| `OPENAI_MODEL` | OpenAI-compatible model | `deepseek/deepseek-r1:free` |
+| `OPENAI_MODEL` | OpenAI-compatible model | `openai/gpt-oss-20b:free` |
 | `OPENAI_HTTP_REFERER` | Optional referer header for OpenRouter | empty |
 | `OPENAI_APP_NAME` | Optional app name header for OpenRouter | empty |
 | `CORS_ORIGIN` | Allowed origins (comma-separated) | `http://localhost,http://localhost:5173` |
 | `RUN_SEED` | Seed DB on backend container start | `true` |
+
+Use this file when running **`docker compose up`**.
 
 ### Backend (`backend/.env`)
 
@@ -214,7 +230,11 @@ Frontend runs at http://localhost:5173
 | `GEMINI_MODEL` | Gemini model identifier |
 | `OPENAI_API_KEY` | Required when `LLM_PROVIDER=openai` |
 | `OPENAI_BASE_URL` | OpenAI-compatible API base URL |
-| `OPENAI_MODEL` | Model name (e.g. `deepseek/deepseek-r1:free` via OpenRouter) |
+| `OPENAI_MODEL` | Model name (e.g. `openai/gpt-oss-20b:free` via OpenRouter) |
+| `OPENAI_HTTP_REFERER` | Optional referer header for OpenRouter |
+| `OPENAI_APP_NAME` | Optional app name header for OpenRouter |
+
+Use this file when running **`cd backend && npm run dev`**.
 
 ### Frontend (`frontend/.env`)
 
@@ -315,12 +335,81 @@ Returns `{ status: "ok" }`.
 
 ## LLM Integration
 
+Skill inference is **optional**. Leave skills empty when creating a task to auto-detect them via the configured LLM. If the LLM is not configured or fails, the frontend asks you to **select skills manually**.
+
+### Enabling LLM skill inference
+
+1. Choose a provider: **`gemini`** or **`openai`**
+2. Open the correct env file for your setup (see table above)
+3. Set `LLM_PROVIDER` and the matching API keys below
+4. Restart the backend (or rebuild Docker: `docker compose up --build`)
+
+---
+
+#### Option A — Gemini
+
+**Get a key:** [Google AI Studio](https://aistudio.google.com/apikey)
+
+**Docker** — add to root `.env`:
+
+```env
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.0-flash-lite
+```
+
+**Local dev** — add to `backend/.env`:
+
+```env
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.0-flash-lite
+```
+
+You do **not** need to set any `OPENAI_*` variables when using Gemini.
+
+---
+
+#### Option B — OpenAI-compatible (OpenRouter / DeepSeek)
+
+**Get a key:** [OpenRouter](https://openrouter.ai)
+
+**Docker** — add to root `.env`:
+
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_openrouter_api_key
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_MODEL=openai/gpt-oss-20b:free
+OPENAI_HTTP_REFERER=http://localhost
+OPENAI_APP_NAME=htx-taskapp
+```
+
+**Local dev** — add to `backend/.env`:
+
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_openrouter_api_key
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_MODEL=openai/gpt-oss-20b:free
+OPENAI_HTTP_REFERER=http://localhost
+OPENAI_APP_NAME=htx-taskapp
+```
+
+You do **not** need to set `GEMINI_API_KEY` when using OpenAI-compatible providers.
+
+Works with any OpenAI-compatible API by changing `OPENAI_BASE_URL` and `OPENAI_MODEL`.
+
+---
+
+### How inference works
+
 Skill inference uses a pluggable provider selected by `LLM_PROVIDER`:
 
-| Provider | Env | Example model |
-|----------|-----|---------------|
-| `gemini` | `GEMINI_API_KEY`, `GEMINI_MODEL` | `gemini-2.0-flash` |
-| `openai` | `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL` | `deepseek/deepseek-r1:free` (OpenRouter) |
+| Provider | Required env vars | Example model |
+|----------|-------------------|---------------|
+| `gemini` | `GEMINI_API_KEY`, `GEMINI_MODEL` | `gemini-2.0-flash-lite` |
+| `openai` | `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL` | `openai/gpt-oss-20b:free` |
 
 When creating a task **without** required skills, the backend prompts the configured LLM:
 
@@ -331,26 +420,7 @@ No explanation.
 ```
 
 - Parsed skills are stored in the database
-- If inference fails or the provider API key is missing, the API returns `422` with an error message
-
-### Switching providers
-
-**OpenRouter / DeepSeek (recommended free tier):**
-```env
-LLM_PROVIDER=openai
-OPENAI_API_KEY=your_openrouter_key
-OPENAI_BASE_URL=https://openrouter.ai/api/v1
-OPENAI_MODEL=deepseek/deepseek-r1:free
-```
-
-**Gemini:**
-```env
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=your_gemini_key
-GEMINI_MODEL=gemini-2.0-flash-lite
-```
-
-Restart the backend after changing provider settings.
+- If inference fails or the API key is missing, the API returns `422` and the frontend prompts you to select skills manually
 
 ## Tradeoffs
 

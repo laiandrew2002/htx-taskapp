@@ -3,6 +3,7 @@ export type ApiErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "UNPROCESSABLE_ENTITY"
+  | "SKILL_INFERENCE_FAILED"
   | "INTERNAL_ERROR";
 
 export interface ApiSuccessResponse<T> {

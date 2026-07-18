@@ -6,7 +6,7 @@ import type { CreateTaskResult } from "@/types/task.types";
 import type { TaskFormValues } from "@/types/taskForm.types";
 import { emptyTaskFormValues } from "@/types/taskForm.types";
 import { useCreateTask } from "@/hooks/useCreateTask";
-import { getErrorMessage } from "@/utils/getErrorMessage";
+import { getCreateTaskErrorMessage } from "@/utils/getCreateTaskErrorMessage";
 import { mapTaskFormToPayload } from "@/utils/mapTaskForm";
 import { Alert } from "@/components/ui/Alert";
 import { SkillBadgeList } from "./SkillBadgeList";
@@ -58,7 +58,8 @@ function CreatedTaskSummary({ result }: { result: CreateTaskResult }) {
 
 export function TaskCreateForm({ skills }: TaskCreateFormProps) {
   const createTaskMutation = useCreateTask();
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<{ title: string; message: string } | null>(null);
+  const [skillSelectionRequired, setSkillSelectionRequired] = useState(false);
   const [createdResult, setCreatedResult] = useState<CreateTaskResult | null>(null);
 
   const form = useForm<TaskFormValues>({
@@ -67,13 +68,16 @@ export function TaskCreateForm({ skills }: TaskCreateFormProps) {
 
   const onSubmit = async (values: TaskFormValues) => {
     setSubmitError(null);
+    setSkillSelectionRequired(false);
 
     try {
       const payload = mapTaskFormToPayload(values);
       const result = await createTaskMutation.mutateAsync(payload);
       setCreatedResult(result);
     } catch (error) {
-      setSubmitError(getErrorMessage(error));
+      const createTaskError = getCreateTaskErrorMessage(error);
+      setSubmitError({ title: createTaskError.title, message: createTaskError.message });
+      setSkillSelectionRequired(createTaskError.requiresSkillSelection);
     }
   };
 
@@ -84,10 +88,15 @@ export function TaskCreateForm({ skills }: TaskCreateFormProps) {
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <SubtaskForm skills={skills} isRoot depth={0} />
+        <SubtaskForm
+          skills={skills}
+          isRoot
+          depth={0}
+          skillSelectionRequired={skillSelectionRequired}
+        />
 
         {submitError ? (
-          <Alert variant="error" title="Failed to create task" message={submitError} />
+          <Alert variant="error" title={submitError.title} message={submitError.message} />
         ) : null}
 
         <div className="flex items-center gap-3">

@@ -36,7 +36,7 @@ services:
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
-      OPENAI_MODEL: ${OPENAI_MODEL:-deepseek/deepseek-r1:free}
+      OPENAI_MODEL: ${OPENAI_MODEL:-openai/gpt-oss-20b:free}
       OPENAI_HTTP_REFERER: ${OPENAI_HTTP_REFERER:-}
       OPENAI_APP_NAME: ${OPENAI_APP_NAME:-}
       RUN_SEED: ${RUN_SEED:-true}
